@@ -14,37 +14,35 @@ public class Party {
   private int size;
 
   // Blind strategie
-  private BlindSchema blinds;
-  private BlindRank activeRank;
+  private BlindSchema blindSchema;
+
+  // Party state
+  private State state;
 
   private int startingStack;
   private List<Player> players;
-  private int buttonIndex;
-  private Stage stage;
+  private int currentPlayer;
+  private int dealer;
+  private List<Card> board;
 
-  private boolean started = false;
-
-  public enum Stage { PREFLOP, FLOP, TURN, RIVER }
+  public enum State { PREFLOP, FLOP, TURN, RIVER }
 
   /**
-   * @param size          number of seats
-   * @param blindSchema
-   * @param startingStack
+   * @param size number of seats
    */
   public Party(int size, BlindSchema blindSchema, int startingStack) {
     this.size = size;
-    this.blinds = blindSchema;
-    this.startingStack = startingStack;
     this.players = new ArrayList<>(size);
-    this.activeRank = blindSchema.getRank(0);
+    this.blindSchema = blindSchema;
+    this.startingStack = startingStack;
   }
 
   public int getSize() {
     return size;
   }
 
-  public BlindSchema getBlinds() {
-    return blinds;
+  public BlindSchema getBlindSchema() {
+    return blindSchema;
   }
 
   public int getStartingStack() {
@@ -55,28 +53,35 @@ public class Party {
     return players;
   }
 
-  public int getButtonIndex() {
-    return buttonIndex;
+  public State getState() {
+    return state;
   }
 
-  public void setButtonIndex(int buttonIndex) {
-    this.buttonIndex = buttonIndex;
+  public void setState(State state) {
+    this.state = state;
   }
 
-  public Stage getStage() {
-    return stage;
+  public int getCurrentPlayer() {
+    return currentPlayer;
   }
 
-  public void setStage(Stage stage) {
-    this.stage = stage;
+  public void setCurrentPlayer(int currentPlayer) {
+    this.currentPlayer = currentPlayer;
   }
 
-  public Party add(Player player) {
-    this.players.add(player);
-    return this;
+  public int getDealer() {
+    return dealer;
   }
 
-  public boolean isStarted() {
-    return started;
+  public void setDealer(int dealer) {
+    this.dealer = dealer;
+  }
+
+  public List<Card> getBoard() {
+    return board;
+  }
+
+  public void setBoard(List<Card> board) {
+    this.board = board;
   }
 }

@@ -10,28 +10,42 @@ import java.util.List;
  * Time: 11:27
  */
 public class BlindSchema {
-    private BlindSchema(List<BlindRank> ranks){
-        this.ranks = ranks;
-    }
-    private List<BlindRank> ranks;
+  private int activeRank = 0;
+  private List<BlindRank> ranks;
 
-  public BlindRank getRank(int index) {
-    return ranks.get(index);
+  private BlindSchema(List<BlindRank> ranks) {
+    this.ranks = ranks;
   }
 
-    public static class Builder {
-        private List<BlindRank> ranks = new ArrayList<>();
+  public List<BlindRank> getRanks() {
+    return ranks;
+  }
 
-        public Builder addRank(BlindRank rank) {
-            ranks.add(rank);
-            return this;
-        }
+  public void setRanks(List<BlindRank> ranks) {
+    this.ranks = ranks;
+  }
 
-        public BlindSchema build() {
-            if (ranks.size() == 0){
-                throw new IllegalStateException("Ranks not set");
-            }
-            return new BlindSchema(ranks);
-        }
+  public int getActiveRank() {
+    return activeRank;
+  }
+
+  public void setActiveRank(int activeRank) {
+    this.activeRank = activeRank;
+  }
+
+  public static class Builder {
+    private List<BlindRank> ranks = new ArrayList<>();
+
+    public Builder addRank(BlindRank rank) {
+      ranks.add(rank);
+      return this;
     }
+
+    public BlindSchema build() {
+      if (ranks.size() == 0) {
+        throw new IllegalStateException("Ranks not set");
+      }
+      return new BlindSchema(ranks);
+    }
+  }
 }

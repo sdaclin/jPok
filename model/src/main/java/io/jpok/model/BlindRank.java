@@ -19,7 +19,7 @@ public class BlindRank {
      * @param bigBlind
      * @param ant
      */
-    public BlindRank(int duration, int smallBlind, int bigBlind, int ant){
+    public BlindRank(int duration, int bigBlind, int smallBlind, int ant){
         this.duration = duration;
         this.smallBlind = smallBlind;
         this.bigBlind = bigBlind;

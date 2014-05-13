@@ -11,21 +11,24 @@ import io.jpok.model.BlindSchema;
  */
 public class BlindManager {
   private final BlindSchema schema;
-  private short activeRank;
   private int count = 0;
 
   public BlindManager(BlindSchema schema){
     this.schema = schema;
-    activeRank = 0;
+    schema.setActiveRank(0);
   }
 
   public BlindRank getBlindRank() {
-    return schema.getRank(activeRank);
+    return schema.getRanks().get(schema.getActiveRank());
   }
 
-  public void handleRankChange() {
-    if (count++ % 10 == 0) {
-      activeRank++;
+  /**
+   * Verify if conditions are good to go to the next level of blind
+   */
+  public void handleRankChanging() {
+    count = count+1 % 10;
+    if (count == 0) {
+      schema.setActiveRank(schema.getActiveRank()+1);
     }
   }
 }

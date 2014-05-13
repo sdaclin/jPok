@@ -1,6 +1,7 @@
 package io.jpok;
 
 import io.jpok.manager.PartyManager;
+import io.jpok.manager.commander.bot.DumbBot;
 import io.jpok.model.BlindRank;
 import io.jpok.model.BlindSchema;
 import io.jpok.model.Party;
@@ -32,12 +33,12 @@ public class Main {
     partyManager = new PartyManager(party);
 
     // Registering players
-    partyManager.registerPlayer("Sylvain");
-    partyManager.registerPlayer("Jessica");
-    partyManager.registerPlayer("Alice");
-    partyManager.registerPlayer("Antoine");
-    partyManager.registerPlayer("Bob");
-    partyManager.registerPlayer("Brian");
+    partyManager.registerPlayer("Sylvain", new DumbBot());
+    partyManager.registerPlayer("Jessica", new DumbBot());
+    partyManager.registerPlayer("Alice", new DumbBot());
+    partyManager.registerPlayer("Antoine", new DumbBot());
+    partyManager.registerPlayer("Bob", new DumbBot());
+    partyManager.registerPlayer("Brian", new DumbBot());
 
     // Start party
     partyManager.play();
