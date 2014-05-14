@@ -23,7 +23,7 @@ public class Party {
   private List<Player> players;
   private int currentPlayer;
   private int dealer;
-  private List<Card> board;
+  private List<Card> board = new ArrayList<>(5);
 
   public enum State { PREFLOP, FLOP, TURN, RIVER }
 

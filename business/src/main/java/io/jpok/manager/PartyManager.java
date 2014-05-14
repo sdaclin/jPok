@@ -76,14 +76,42 @@ public class PartyManager {
       // Handling preflop, flop, turn and river bets
       for (Party.State currentStage : Party.State.values()) {
         party.setState(currentStage);
-        handleBets();
-        // If there is just one player IN, thie betting round is over
-        if (countPlayer(Player.State.IN, Player.State.ALLIN) == 1) {
-          break;
+
+        // Deal board
+        dealBoard(currentStage);
+
+        // If there is just one player IN, there is no need to ask action fo the winner
+        if (countPlayer(Player.State.IN, Player.State.ALLIN) > 1) {
+          continue;
         }
+
+        // Asks each player to bet
+        handleBets();
       }
 
       payWinners();
+    }
+  }
+
+  /**
+   * Deal board if necessary
+   */
+  private void dealBoard(Party.State stage) {
+    switch(stage) {
+      case PREFLOP:
+        party.getBoard().clear();
+        break;
+      case FLOP:
+        party.getBoard().add(deckManager.pick());
+        party.getBoard().add(deckManager.pick());
+        party.getBoard().add(deckManager.pick());
+        break;
+      case TURN:
+        party.getBoard().add(deckManager.pick());
+        break;
+      case RIVER:
+        party.getBoard().add(deckManager.pick());
+        break;
     }
   }
 
