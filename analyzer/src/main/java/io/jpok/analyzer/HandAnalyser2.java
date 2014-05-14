@@ -1,8 +1,8 @@
 package io.jpok.analyzer;
 
-import fr.jpok.model.HandValue;
-import fr.jpok.model.Card;
-import fr.jpok.model.Strength;
+import io.jpok.model.HandValue;
+import io.jpok.model.Card;
+import io.jpok.model.Strength;
 
 /**
  * Analyse une main en fonction des 2 cartes qu'elle contient

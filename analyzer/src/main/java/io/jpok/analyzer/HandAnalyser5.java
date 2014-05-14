@@ -2,12 +2,11 @@ package io.jpok.analyzer;
 
 import java.util.Arrays;
 
-import fr.jpok.model.HandValue;
+import io.jpok.model.HandValue;
 
-import fr.jpok.model.Card;
-import fr.jpok.model.Rank;
-import fr.jpok.model.Strength;
-import fr.jpok.tools.ArrayTools;
+import io.jpok.model.Card;
+import io.jpok.model.Strength;
+import io.jpok.tools.ArrayTools;
 
 /**
  * Analyse une main en fonction des 3 cartes sur table
@@ -117,7 +116,7 @@ public class HandAnalyser5 implements HandAnalyser {
 		}
 		if (props[4]) topCards[0]=cards[0];
 		// --- Test des quintes
-		if (max<0 && (cards[0].compareRank(cards[4])==4 || (cards[0].getRank().equals(Rank.ACE) && cards[4].equals(Rank.TWO)))) {
+		if (max<0 && (cards[0].compareRank(cards[4])==4 || (cards[0].getRank().equals(Card.Rank.ACE) && cards[4].equals(Card.Rank.TWO)))) {
 			props[3]=true;
 			topCards[0]=cards[0];
 			kickerSize=0;

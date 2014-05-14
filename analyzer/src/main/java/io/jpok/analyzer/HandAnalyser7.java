@@ -2,12 +2,11 @@ package io.jpok.analyzer;
 
 import java.util.Arrays;
 
-import fr.jpok.model.HandValue;
+import io.jpok.model.HandValue;
 
-import fr.jpok.model.Card;
-import fr.jpok.model.Rank;
-import fr.jpok.model.Strength;
-import fr.jpok.tools.ArrayTools;
+import io.jpok.model.Card;
+import io.jpok.model.Strength;
+import io.jpok.tools.ArrayTools;
 
 /**
  * Analyse une main en fonction des 5 cartes sur table
@@ -181,11 +180,11 @@ public class HandAnalyser7 implements HandAnalyser {
 		// --- Tester les suites au 5 (5, 4, 3, 2 AS)
 		int k=0;
 		if (!props[7]) {
-			while (cards[k].getRank()==Rank.ACE) {
+			while (cards[k].getRank()==Card.Rank.ACE) {
 				couleur=cards[k].getSuit().ordinal();
 				force=cards[k].getRank().ordinal();
 				// --- Tester la quinte flush
-				if (col[couleur]==Rank.TWO.ordinal() && colForces[couleur].getRank()==Rank.FIVE) {
+				if (col[couleur]==Card.Rank.TWO.ordinal() && colForces[couleur].getRank()==Card.Rank.FIVE) {
 					// --- Quinte Flush
 					props[3]=true;
 					props[7]=true;
@@ -193,7 +192,7 @@ public class HandAnalyser7 implements HandAnalyser {
 					break;
 				}
 				// --- Tester la quinte
-				if (!props[3] && col[4]==Rank.TWO.ordinal() && colForces[4].getRank()==Rank.FIVE) {
+				if (!props[3] && col[4]==Card.Rank.TWO.ordinal() && colForces[4].getRank()==Card.Rank.FIVE) {
 					// --- Quinte
 					props[3]=true;
 					colForce=colForces[4];
