@@ -17,13 +17,13 @@ public class DumbBot implements PlayerCommander {
 
   @Override
   public void notify(Party party) {
-    play = (Math.random() * 3 == 0);
+    play = (int)(Math.random() * 3) == 0;
   }
 
   @Override
   public void notify(Player player, Action action) {
     if (action.getType() == Action.Type.RAISE) {
-      play = (Math.random() * 2 == 0);
+      play = (int)(Math.random() * 2) == 0;
     }
   }
 

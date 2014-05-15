@@ -24,8 +24,6 @@ public class PartyManager {
   private final BlindManager blindManager;
   // Current amount to call
   private int betAmount;
-  // Last player who has raised during the betting round
-  private int raiserIndex;
   // Current player who is doing an action
   private int currentPlayerIndex;
   // Manager that handle the deck of cards
@@ -70,7 +68,7 @@ public class PartyManager {
       // Deal carts to players
       dealPlayersCards();
 
-      // Init bet Amount and playerInCount
+      // Init bet Amount
       betAmount = 0;
 
       // Handling preflop, flop, turn and river bets
@@ -81,7 +79,7 @@ public class PartyManager {
         dealBoard(currentStage);
 
         // If there is just one player IN, there is no need to ask action fo the winner
-        if (countPlayer(Player.State.IN, Player.State.ALLIN) > 1) {
+        if (countPlayer(Player.State.IN, Player.State.ALLIN) < 2) {
           continue;
         }
 
@@ -113,8 +111,16 @@ public class PartyManager {
         party.getBoard().add(deckManager.pick());
         break;
     }
+    if (stage != Party.State.PREFLOP) {
+      for(PlayerCommander commander : commanders){
+        commander.notify(party);
+      }
+    }
   }
 
+  /**
+   * Pay players
+   */
   private void payWinners() {
 
     List<Player> playersInGame = new ArrayList<>();
@@ -129,9 +135,10 @@ public class PartyManager {
       }
       if (player.getState() == Player.State.FOLD) {
         playersFold.add(player);
+        continue;
       }
       playersInGame.add(player);
-      playerHand = new TreeSet<>(party.getBoard());
+      playerHand = new TreeSet<>(player.getHand().getCards());
       player.setHandValue(ha.getHandStrength(playerHand.toArray(new Card[0]), board.toArray(new Card[0])));
     }
 
@@ -149,8 +156,8 @@ public class PartyManager {
     Map<Integer, List<Player>> payRanks = new HashMap<>();
     //    Starting with winners
     for (Player player : playersInGame) {
-      if (player.getHandValue().getStrength().ordinal() != lastHandValue) {
-        lastHandValue = player.getHandValue().getStrength().ordinal();
+      if (player.getHandValue().getValue() != lastHandValue) {
+        lastHandValue = player.getHandValue().getValue();
         rankId++;
         payRanks.put(rankId, new ArrayList<Player>());
       }
@@ -167,7 +174,6 @@ public class PartyManager {
 
     // Distribute chips
     int maxBetForRank;
-    int totalBetForRank;
     boolean proceedToNextRank = true;
     // For each pay ranks starting from winners to loosers
     for (int i = 0; i < payRanks.size() && proceedToNextRank; i++) {
@@ -175,9 +181,8 @@ public class PartyManager {
       logger.info("Paying rank " + i);
       
       // Count the max bet amount to retribute for the current rank
-      maxBetForRank = totalBetForRank = 0;
+      maxBetForRank = 0;
       for (Player player : payRanks.get(i)) {
-        totalBetForRank += player.getBet();
         if (maxBetForRank < player.getBet()) {
           maxBetForRank = player.getBet();
         }
@@ -200,6 +205,11 @@ public class PartyManager {
             PlayerManager.creditStack(playerToCredit, paieJoueurCourant * playerToCredit.getBet() / maxBetForRank);
           }
         }
+      }
+
+      // Reclaim bet stack to normal stack
+      for (Player player : payRanks.get(i)) {
+        PlayerManager.betToStack(player, player.getBet());
       }
     }
   }
@@ -226,16 +236,7 @@ public class PartyManager {
    * @return true when there is just one player that is not in LOOSE state
    */
   protected boolean isOver() {
-    int nbPlayer = 0;
-    for (Player player : party.getPlayers()) {
-      if (player.getState() != Player.State.LOOSE) {
-        nbPlayer++;
-        if (nbPlayer > 1) {
-          return false;
-        }
-      }
-    }
-    return true;
+    return countPlayerNot(Player.State.LOOSE) < 2;
   }
 
   /**
@@ -264,7 +265,12 @@ public class PartyManager {
 
     // Asks bets to every player until we go back to the raiser
     while (nextPlayer().getBet() != raiseAmount) {
+      // If players is allready all in there is nothing to ask
       if (isAllIn(currentPlayer())) {
+        continue;
+      }
+      // If player is the only player left, there is nothing to ask
+      if (countPlayer(Player.State.IN) == 1){
         continue;
       }
       handleBet(currentPlayer());
@@ -280,14 +286,25 @@ public class PartyManager {
   }
 
   /**
-   * Count player in game in a specific state
-   *
-   * @return
+   * Count player in a specific state
    */
   private int countPlayer(Player.State... statesToCount) {
     int acc = 0;
     for (Player player : party.getPlayers()) {
       if (Arrays.asList(statesToCount).contains(player.getState())) {
+        acc++;
+      }
+    }
+    return acc;
+  }
+
+  /**
+   * Count player who are NOT in a specific state
+   */
+  private int countPlayerNot(Player.State... statesToCount) {
+    int acc = 0;
+    for (Player player : party.getPlayers()) {
+      if (! Arrays.asList(statesToCount).contains(player.getState())) {
         acc++;
       }
     }

@@ -32,4 +32,22 @@ public class PlayerManager {
     logger.info("Crediting [{}] stack from [{}]", amount, player.getName());
     player.setStack(player.getStack() + amount);
   }
+
+  public static void stackToBet(Player player, int amount) {
+    if (player.getStack() < amount) {
+      throw new RuntimeException("Not enough chips");
+    }
+    logger.info("Moving [{}] chips from stack to bet", amount);
+    player.setBet(player.getBet() + amount);
+    player.setStack(player.getStack() - amount);
+  }
+
+  public static void betToStack(Player player, int amount) {
+    if (player.getBet() < amount) {
+      throw new RuntimeException("Not enough chips");
+    }
+    logger.info("Moving [{}] chips from bet to stack", amount);
+    player.setStack(player.getStack() + amount);
+    player.setBet(player.getBet() - amount);
+  }
 }

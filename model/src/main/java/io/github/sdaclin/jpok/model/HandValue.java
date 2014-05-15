@@ -40,7 +40,7 @@ public class HandValue implements Comparable<HandValue>, Serializable {
 		return strength;
 	}
 	
-	protected int getValue() {
+	public int getValue() {
 		return value;
 	}
 	
