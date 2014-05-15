@@ -3,7 +3,6 @@ package io.github.sdaclin.jpok.manager;
 import io.github.sdaclin.jpok.model.*;
 import io.github.sdaclin.jpok.analyzer.HandAnalyserProxy;
 import io.github.sdaclin.jpok.manager.commander.PlayerCommander;
-import io.jpok.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
