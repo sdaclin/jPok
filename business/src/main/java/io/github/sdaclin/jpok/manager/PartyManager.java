@@ -78,6 +78,9 @@ public class PartyManager {
         // Deal board
         dealBoard(currentStage);
 
+        // Notify each player
+        notifyPlayers(party);
+
         // If there is just one player IN, there is no need to ask action fo the winner
         if (countPlayer(Player.State.IN, Player.State.ALLIN) < 2) {
           continue;
@@ -95,7 +98,7 @@ public class PartyManager {
    * Deal board if necessary
    */
   private void dealBoard(Party.State stage) {
-    switch(stage) {
+    switch (stage) {
       case PREFLOP:
         party.getBoard().clear();
         break;
@@ -110,11 +113,6 @@ public class PartyManager {
       case RIVER:
         party.getBoard().add(deckManager.pick());
         break;
-    }
-    if (stage != Party.State.PREFLOP) {
-      for(PlayerCommander commander : commanders){
-        commander.notify(party);
-      }
     }
   }
 
@@ -179,7 +177,7 @@ public class PartyManager {
     for (int i = 0; i < payRanks.size() && proceedToNextRank; i++) {
       proceedToNextRank = false;
       logger.info("Paying rank " + i);
-      
+
       // Count the max bet amount to retribute for the current rank
       maxBetForRank = 0;
       for (Player player : payRanks.get(i)) {
@@ -187,7 +185,7 @@ public class PartyManager {
           maxBetForRank = player.getBet();
         }
       }
-      
+
       // Taking ships into inferiors ranks
       for (int j = i + 1; j < payRanks.size(); j++) {
         // Taking chips to all players in this rank
@@ -244,18 +242,25 @@ public class PartyManager {
    * Handle BigBlind, SmallBlind and Ants at flop time
    */
   private void handleBets() {
+    int betResult;
+
     // Handle big blind, small blind and ants during preflop
     if (party.getState() == Party.State.PREFLOP) {
       // Bet Ants
       if (blindManager.getBlindRank().getAnt() > 0) {
         for (Player player : party.getPlayers()) {
-          bet(player, blindManager.getBlindRank().getAnt());
+          betResult = bet(player, blindManager.getBlindRank().getAnt());
+          notifyPlayers(currentPlayer(),new Action.Builder().ant(betResult).build());
         }
       }
       // Bet small blind
-      bet(nextPlayer(party.getDealer()), blindManager.getBlindRank().getSmallBlind());
+      betResult = bet(nextPlayer(party.getDealer()), blindManager.getBlindRank().getSmallBlind());
+      notifyPlayers(currentPlayer(),new Action.Builder().smallBlind(betResult).build());
+
       // Bet big blind
-      bet(nextPlayer(), blindManager.getBlindRank().getBigBlind());
+      betResult = bet(nextPlayer(), blindManager.getBlindRank().getBigBlind());
+      notifyPlayers(currentPlayer(),new Action.Builder().bigBlind(betResult).build());
+
       betAmount = blindManager.getBlindRank().getBigBlind();
     } else {
       betAmount = 0;
@@ -270,7 +275,7 @@ public class PartyManager {
         continue;
       }
       // If player is the only player left, there is nothing to ask
-      if (countPlayer(Player.State.IN) == 1){
+      if (countPlayer(Player.State.IN) == 1) {
         continue;
       }
       handleBet(currentPlayer());
@@ -304,7 +309,7 @@ public class PartyManager {
   private int countPlayerNot(Player.State... statesToCount) {
     int acc = 0;
     for (Player player : party.getPlayers()) {
-      if (! Arrays.asList(statesToCount).contains(player.getState())) {
+      if (!Arrays.asList(statesToCount).contains(player.getState())) {
         acc++;
       }
     }
@@ -313,28 +318,46 @@ public class PartyManager {
 
   private void handleBet(Player player) {
     Action action = askAction(party.getPlayers().indexOf(player));
+    int realAmount;
     switch (action.getType()) {
       case CALL:
-        bet(player, betAmount);
+        realAmount = bet(player, betAmount);
+        notifyPlayers(player, new Action.Builder().call(realAmount).build());
         logger.info("{} calls {}", player.getName(), betAmount);
         break;
       case FOLD:
         player.setState(Player.State.FOLD);
+        notifyPlayers(player, action);
         logger.info("{} folds", player.getName());
         break;
       case RAISE:
-        // If raise is < than minimum raise and the player is not going all in
-        if (action.getAmount() < raiseAmount && action.getAmount() != player.getStack()) {
+        // If raise is < than minimum raise
+        if (action.getAmount() < raiseAmount) {
           // Raise isn't enough so the player do a simple call
-          bet(player, betAmount);
-          logger.info("{} calls {}", player.getName(), betAmount);
+          realAmount = bet(player, betAmount);
+          notifyPlayers(player, new Action.Builder().call(realAmount).build());
+          logger.info("{} calls {}", player.getName(), realAmount);
+          break;
         }
         // Player is raising or going all in
-        int amount = bet(currentPlayer(), action.getAmount());
+        realAmount = bet(currentPlayer(), action.getAmount());
+        notifyPlayers(player, new Action.Builder().raise(realAmount).build());
+
         // Raise is effective
-        if (amount > raiseAmount) {
-          raiseAmount = betAmount - amount;
-          betAmount = amount;
+        if (realAmount > raiseAmount) {
+          raiseAmount = betAmount - realAmount;
+          betAmount = realAmount;
+        }
+        break;
+      case ALL_IN:
+        realAmount = bet(player, player.getStack());
+        notifyPlayers(player, new Action.Builder().allIn(realAmount).build());
+        logger.info("{} goes all in {}", player.getName(), realAmount);
+
+        // Raise is effective
+        if (realAmount > raiseAmount) {
+          raiseAmount = betAmount - realAmount;
+          betAmount = realAmount;
         }
         break;
     }
@@ -342,6 +365,18 @@ public class PartyManager {
 
   private boolean isAllIn(Player player) {
     return player.getStack() == 0;
+  }
+
+  private void notifyPlayers(Party party) {
+    for (PlayerCommander commander : commanders) {
+      commander.notify(party);
+    }
+  }
+
+  private void notifyPlayers(Player player, Action action) {
+    for (PlayerCommander commander : commanders) {
+      commander.notify(player, action);
+    }
   }
 
   private Action askAction(int playerIndex) {

@@ -68,6 +68,11 @@ public class Player {
     this.handValue = handValue;
   }
 
+  @Override
+  public String toString() {
+    return String.format("%s [%d][%d]", name, bet,stack);
+  }
+
   // TODO try different hashcode when running load tests
   @Override
   public int hashCode() {

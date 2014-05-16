@@ -8,9 +8,13 @@ package io.github.sdaclin.jpok.model;
  */
 public class Action {
   public enum Type {
+    SMALL_BLIND,
+    BIG_BLIND,
+    ANT,
     FOLD,
     CALL,
-    RAISE;
+    RAISE,
+    ALL_IN;
   }
 
   private final Type type;
@@ -37,9 +41,27 @@ public class Action {
       return new Action(type,amount);
     }
 
-    public Builder raise(int amount) {
-      this.type = Type.RAISE;
+    public Builder smallBlind(int amount) {
+      this.type = Type.SMALL_BLIND;
       this.amount = amount;
+      return this;
+    }
+
+    public Builder bigBlind(int amount) {
+      this.type = Type.BIG_BLIND;
+      this.amount = amount;
+      return this;
+    }
+
+    public Builder ant(int amount) {
+      this.type = Type.ANT;
+      this.amount = amount;
+      return this;
+    }
+
+
+    public Builder fold() {
+      this.type = Type.FOLD;
       return this;
     }
 
@@ -48,8 +70,21 @@ public class Action {
       return this;
     }
 
-    public Builder fold() {
-      this.type = Type.FOLD;
+    public Builder call(int amount) {
+      this.type = Type.CALL;
+      this.amount = amount;
+      return this;
+    }
+
+    public Builder raise(int amount) {
+      this.type = Type.RAISE;
+      this.amount = amount;
+      return this;
+    }
+
+    public Builder allIn(int amount) {
+      this.type = Type.ALL_IN;
+      this.amount = amount;
       return this;
     }
   }
