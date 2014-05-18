@@ -46,7 +46,9 @@ public class PartyManager {
     if (party.getSize() == party.getPlayers().size()) {
       throw new RuntimeException("Party is full");
     }
-    party.getPlayers().add(new Player(playerId++, playerName, party.getStartingStack()));
+    Player player = new Player(playerId++, playerName, party.getStartingStack());
+    party.getPlayers().add(player);
+    commander.notify(party.getPlayers().indexOf(player));
     commanders.add(commander);
   }
 
@@ -190,7 +192,7 @@ public class PartyManager {
       for (int j = i + 1; j < payRanks.size(); j++) {
         // Taking chips to all players in this rank
         for (Player playerToDebit : payRanks.get(j)) {
-          int paieJoueurCourant = PlayerManager.debitBetStack(playerToDebit, maxBetForRank);
+          int paieJoueurCourant = ChipManager.debitBetStack(playerToDebit, maxBetForRank);
 
           // If the player bet stack is still positive we must proceed with the next rank
           if (playerToDebit.getBet() > 0) {
@@ -200,14 +202,14 @@ public class PartyManager {
           // Crediting previous rank winners
           for (Player playerToCredit : payRanks.get(i)) {
             // TODO Handle chips division when paying
-            PlayerManager.creditStack(playerToCredit, paieJoueurCourant * playerToCredit.getBet() / maxBetForRank);
+            ChipManager.creditStack(playerToCredit, paieJoueurCourant * playerToCredit.getBet() / maxBetForRank);
           }
         }
       }
 
       // Reclaim bet stack to normal stack
       for (Player player : payRanks.get(i)) {
-        PlayerManager.betToStack(player, player.getBet());
+        ChipManager.betToStack(player, player.getBet());
       }
     }
   }
@@ -249,16 +251,16 @@ public class PartyManager {
       // Bet Ants
       if (blindManager.getBlindRank().getAnt() > 0) {
         for (Player player : party.getPlayers()) {
-          betResult = bet(player, blindManager.getBlindRank().getAnt());
+          betResult = ChipManager.betForced(player, blindManager.getBlindRank().getAnt());
           notifyPlayers(currentPlayer(),new Action.Builder().ant(betResult).build());
         }
       }
       // Bet small blind
-      betResult = bet(nextPlayer(party.getDealer()), blindManager.getBlindRank().getSmallBlind());
+      betResult = ChipManager.betForced(nextPlayer(party.getDealer()), blindManager.getBlindRank().getSmallBlind());
       notifyPlayers(currentPlayer(),new Action.Builder().smallBlind(betResult).build());
 
       // Bet big blind
-      betResult = bet(nextPlayer(), blindManager.getBlindRank().getBigBlind());
+      betResult = ChipManager.betForced(nextPlayer(), blindManager.getBlindRank().getBigBlind());
       notifyPlayers(currentPlayer(),new Action.Builder().bigBlind(betResult).build());
 
       betAmount = blindManager.getBlindRank().getBigBlind();
@@ -318,47 +320,59 @@ public class PartyManager {
 
   private void handleBet(Player player) {
     Action action = askAction(party.getPlayers().indexOf(player));
-    int realAmount;
     switch (action.getType()) {
       case CALL:
-        realAmount = bet(player, betAmount);
-        notifyPlayers(player, new Action.Builder().call(realAmount).build());
-        logger.info("{} calls {}", player.getName(), betAmount);
+        try {
+          ChipManager.bet(player, betAmount);
+        }catch (Exception e) {
+          notifyPlayers(player, new Action.Builder().fold().build());
+          logger.warn("[{}] try to call without enough money => FOLD");
+          break;
+        }
+        notifyPlayers(player, action);
+        logger.info("[{}] CALL [{}]", player.getName(), betAmount);
         break;
       case FOLD:
         player.setState(Player.State.FOLD);
         notifyPlayers(player, action);
-        logger.info("{} folds", player.getName());
+        logger.info("[{}] FOLD", player.getName());
         break;
       case RAISE:
         // If raise is < than minimum raise
         if (action.getAmount() < raiseAmount) {
-          // Raise isn't enough so the player do a simple call
-          realAmount = bet(player, betAmount);
-          notifyPlayers(player, new Action.Builder().call(realAmount).build());
-          logger.info("{} calls {}", player.getName(), realAmount);
+          notifyPlayers(player, new Action.Builder().fold().build());
+          logger.warn("[{}] try to raise without minimum raise amount => FOLD");
           break;
         }
-        // Player is raising or going all in
-        realAmount = bet(currentPlayer(), action.getAmount());
-        notifyPlayers(player, new Action.Builder().raise(realAmount).build());
+        // Player is raising
+        try {
+          ChipManager.bet(currentPlayer(), action.getAmount());
+        } catch (Exception e) {
+          notifyPlayers(player, new Action.Builder().fold().build());
+          logger.warn("[{}] try to raise without enough money => FOLD");
+          break;
+        }
 
         // Raise is effective
-        if (realAmount > raiseAmount) {
-          raiseAmount = betAmount - realAmount;
-          betAmount = realAmount;
+        if (action.getAmount() > raiseAmount) {
+          raiseAmount = betAmount - action.getAmount();
+          betAmount = action.getAmount();
         }
+
+        notifyPlayers(player, action);
+        logger.info("[{}] RAISE [{}]", player.getName(), action.getAmount());
         break;
       case ALL_IN:
-        realAmount = bet(player, player.getStack());
-        notifyPlayers(player, new Action.Builder().allIn(realAmount).build());
-        logger.info("{} goes all in {}", player.getName(), realAmount);
+        ChipManager.bet(player, player.getStack());
 
         // Raise is effective
-        if (realAmount > raiseAmount) {
-          raiseAmount = betAmount - realAmount;
-          betAmount = realAmount;
+        if (action.getAmount() > raiseAmount) {
+          raiseAmount = betAmount - action.getAmount();
+          betAmount = action.getAmount();
         }
+
+        notifyPlayers(player, action);
+        logger.info("[{}] ALL IN [{}]", player.getName(), action.getAmount());
         break;
     }
   }
@@ -424,31 +438,6 @@ public class PartyManager {
 
   private Player currentPlayer() {
     return party.getPlayers().get(currentPlayerIndex);
-  }
-
-  /**
-   * Make a bet for a player
-   * <p/>
-   * The bet is limited by the player's stack
-   *
-   * @param player who made the bet
-   * @param amount requested to bet
-   * @return final bet amount
-   */
-  private int bet(Player player, int amount) {
-    // Only player that are IN can bet
-    if (player.getState() != Player.State.IN) {
-      return 0;
-    }
-    // Player can't bet more than his stack
-    if (player.getStack() < amount) {
-      amount = player.getStack();
-    }
-    player.setBet(player.getBet() + amount);
-    player.setStack(player.getStack() - amount);
-
-    logger.info("{} bets {} [{},{}]", player.getName(), amount, player.getBet(), player.getStack());
-    return amount;
   }
 
   private void initButton() {
